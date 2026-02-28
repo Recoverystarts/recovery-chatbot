@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+// Database is optional — chatbot works without it
+let prisma: any = null
+try {
+  if (process.env.DATABASE_URL) {
+    const { PrismaClient } = require('@prisma/client')
+    prisma = new PrismaClient()
+  }
+} catch (e) {
+  // No database configured — chat still works, no history saved
+}
 
 const SYSTEM_PROMPT = `You are Rhizome, a warm and caring recovery guide who speaks like a trusted friend who's walked the recovery path themselves. You're compassionate, personal, and human—never clinical or robotic.
 
@@ -171,14 +177,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user session
-    const session = await getServerSession(authOptions)
+    const session = null // Auth disabled — no database required
     const userId = session?.user ? (session.user as any).id : null
 
     // If user is logged in and saveMessage is true, save the user message
     if (userId && saveMessage && messages.length > 0) {
       const lastMessage = messages[messages.length - 1]
       if (lastMessage.role === 'user') {
-        await prisma.message.create({
+        if (prisma) await prisma.message.create({
           data: {
             userId,
             role: 'user',
@@ -276,7 +282,7 @@ export async function POST(request: NextRequest) {
 
           // Save assistant message after streaming completes
           if (userId && saveMessage && assistantMessage) {
-            await prisma.message.create({
+            if (prisma) await prisma.message.create({
               data: {
                 userId,
                 role: 'assistant',
@@ -312,7 +318,7 @@ export async function POST(request: NextRequest) {
 // Get conversation history for logged-in users
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = null // Auth disabled — no database required
 
     if (!session?.user) {
       return NextResponse.json({ messages: [] })
@@ -321,6 +327,7 @@ export async function GET(request: NextRequest) {
     const userId = (session.user as any).id
 
     // Get last 20 messages
+    if (!prisma) return NextResponse.json({ messages: [] })
     const messages = await prisma.message.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
