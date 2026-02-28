@@ -176,9 +176,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user session
-    const session = null // Auth disabled — no database required
-    const userId = session?.user ? (session.user as any).id : null
+    // Get user session (disabled — no database required)
+    const session: any = null
+    const userId = session?.user?.id || null
 
     // If user is logged in and saveMessage is true, save the user message
     if (userId && saveMessage && messages.length > 0) {
