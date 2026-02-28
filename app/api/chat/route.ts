@@ -329,7 +329,7 @@ export async function GET(request: NextRequest) {
 
     // Reverse to get chronological order
     return NextResponse.json({
-      messages: messages.reverse().map(msg => ({
+      messages: messages.reverse().map((msg: {role: string; content: string}) => ({
         role: msg.role,
         content: msg.content
       }))
