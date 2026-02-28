@@ -315,19 +315,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Get conversation history for logged-in users
+// Get conversation history (auth disabled — returns empty)
 export async function GET(request: NextRequest) {
   try {
-    const session = null // Auth disabled — no database required
-
-    if (!session?.user) {
-      return NextResponse.json({ messages: [] })
-    }
-
-    const userId = (session.user as any).id
-
-    // Get last 20 messages
+    // No auth/DB configured — return empty history
     if (!prisma) return NextResponse.json({ messages: [] })
+    const userId = null
+    if (!userId) return NextResponse.json({ messages: [] })
     const messages = await prisma.message.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
